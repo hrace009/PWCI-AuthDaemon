@@ -44,7 +44,7 @@ HEADERS += \
     Protocol/Game2AU.h \
     Protocol/GetAddCashSN.h
 
-QMAKE_LFLAGS += -static-libstdc++ -static-libgcc -static
+QMAKE_LFLAGS += 
 
 CONFIG(32bit) {
     LIBS += -L$$PWD/../../../../opt/Qt/mysql/x32/lib/libmysqlclient.a

@@ -36,7 +36,7 @@ void MatrixPasswd::Unmarshal()
         if (Settings::hash_type == 1)
             writeOctet(Utils::base64Octets(passwd));
         else if (Settings::hash_type == 2)
-            writeOctet(Utils::fromUtf8(passwd.remove(0, 2).toUtf8()));
+            	writeOctet(Utils::hexOctets(passwd.remove(0, 2)));
     } else {
         writeInt32(2);
         writeInt32(0);

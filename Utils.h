@@ -20,6 +20,7 @@ public:
     static QString getIp(int ip);
     static Octets emptyOctets();
     static Octets base64Octets(QString text);
+    static Octets hexOctets(QString text);
 };
 
 #endif // UTILS_H

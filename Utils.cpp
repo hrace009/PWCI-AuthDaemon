@@ -57,3 +57,11 @@ Octets Utils::base64Octets(QString text)
     o.lenght = o.text.length();
     return o;
 }
+
+Octets Utils::hexOctets(QString text)
+{
+    Octets o;
+    o.text = QByteArray::fromHex(text.toLatin1());
+    o.lenght = o.text.length();
+    return o;
+}
