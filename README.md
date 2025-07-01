@@ -1,6 +1,6 @@
 # GAuthDaemon
 
-**GAuthDaemon** is an open source authentication server for the *Perfect World* game ecosystem.  This project is a C++ rewrite of the original daemon and uses the Qt 5 framework together with MySQL for data storage.  It aims to provide a stable and customizable auth service for private servers and developers.
+**GAuthDaemon** is an open source authentication server for the *Perfect World* game ecosystem.  This project is a C++ rewrite of the original daemon and uses the Qt 5 framework together with MySQL/MariaDB for storage.
 
 ## Features
 
@@ -19,14 +19,29 @@
 - A MySQL or MariaDB server
 - A C++17 compatible compiler
 
-For Fedora based distributions you can run the provided `install.sh` to install all required Qt packages automatically.
+For Fedora-based distributions you can run the provided `install.sh` to install all required Qt packages automatically.
 
-### Building
+### Installation using Linux Packages
+
+#### Rocky Linux 9
+
+```bash
+sudo dnf install qt5-qtbase-devel qt5-qtnetwork-devel qt5-qtsql-devel mariadb-server mariadb-devel gcc-c++
+```
+
+#### Ubuntu 20.04
+
+```bash
+sudo apt update
+sudo apt install qt5-qmake qtbase5-dev libqt5sql5-mysql build-essential mariadb-server libmariadb-dev
+```
+
+### Building from Source
 
 Clone the repository and build it with `qmake`:
 
 ```bash
-git clone https://github.com/yourname/PWCI-AuthDaemon.git
+git clone https://github.com/hrace009/PWCI-AuthDaemon.git
 cd PWCI-AuthDaemon
 qmake gauthd.pro
 make
@@ -84,4 +99,3 @@ Contributions are welcome! Feel free to submit pull requests or report issues to
 ## License
 
 This project is licensed under the terms of the [GNU General Public License v3.0](LICENSE).
-
