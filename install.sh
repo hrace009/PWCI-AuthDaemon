@@ -3,70 +3,70 @@
 # Define Log File Name
 LOGFILE="install_qt.log"
 
-# Função para adicionar mensagens ao log
+# Function to add messages to the log
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> $LOGFILE
 }
 
-# Inicializa o arquivo de log
-echo "Início da instalação - $(date)" > $LOGFILE
+# Initialize the log file
+echo "Start of installation - $(date)" > $LOGFILE
 
-# Atualiza os pacotes existentes e exibe o progresso no terminal e no log
-log "Atualizando pacotes existentes..."
-echo "Atualizando pacotes existentes..."
+# Update existing packages and display progress in the terminal and in the log
+log "Updating existing packages..."
+echo "Updating existing packages..."
 if ! sudo dnf update -y | tee -a $LOGFILE; then
-    log "Erro ao atualizar pacotes."
+    log "Error updating packages."
     exit 1
 fi
 
-# Reinstala os pacotes gcc, gcc-c++ e glibc-devel
-log "Reinstalando pacotes gcc, gcc-c++ e glibc-devel..."
-echo "Reinstalando pacotes gcc, gcc-c++ e glibc-devel..."
+# Reinstall gcc, gcc-c++, and glibc-devel packages
+log "Reinstalling gcc, gcc-c++, and glibc-devel packages..."
+echo "Reinstalling gcc, gcc-c++, and glibc-devel packages..."
 if ! sudo dnf reinstall -y gcc gcc-c++ glibc-devel | tee -a $LOGFILE; then
-    log "Erro ao reinstalar pacotes gcc, gcc-c++ e glibc-devel."
+    log "Error reinstalling gcc, gcc-c++, and glibc-devel packages."
     exit 1
 fi
 
-# Instala o grupo de ferramentas de desenvolvimento e exibe o progresso no terminal e no log
-log "Instalando Development Tools..."
-echo "Instalando Development Tools..."
+# Install the Development Tools group and display progress in the terminal and in the log
+log "Installing Development Tools..."
+echo "Installing Development Tools..."
 if ! sudo dnf groupinstall "Development Tools" -y | tee -a $LOGFILE; then
-    log "Erro ao instalar Development Tools."
+    log "Error installing Development Tools."
     exit 1
 fi
 
-# Instala os pacotes necessários e exibe o progresso no terminal e no log
-log "Instalando pacotes qt5..."
-echo "Instalando pacotes qt5..."
+# Install required qt5 packages and display progress in the terminal and in the log
+log "Installing qt5 packages..."
+echo "Installing qt5 packages..."
 if ! sudo dnf install -y qt5-qtbase-devel qt5-qtx11extras qt5-qttools | tee -a $LOGFILE; then
-    log "Erro ao instalar pacotes qt5."
+    log "Error installing qt5 packages."
     exit 1
 fi
 
-# Remove pacotes desnecessários e exibe o progresso no terminal e no log
-log "Removendo pacotes desnecessários..."
-echo "Removendo pacotes desnecessários..."
+# Remove unnecessary packages and display progress in the terminal and in the log
+log "Removing unnecessary packages..."
+echo "Removing unnecessary packages..."
 if ! sudo dnf autoremove -y | tee -a $LOGFILE; then
-    log "Erro ao remover pacotes desnecessários."
+    log "Error removing unnecessary packages."
     exit 1
 fi
 
-# Instala bibliotecas adicionais e exibe o progresso no terminal e no log
-log "Instalando bibliotecas adicionais..."
-echo "Instalando bibliotecas adicionais..."
+# Install additional libraries and display progress in the terminal and in the log
+log "Installing additional libraries..."
+echo "Installing additional libraries..."
 if ! sudo dnf install -y qt5-qttools-devel | tee -a $LOGFILE; then
-    log "Erro ao instalar bibliotecas adicionais."
+    log "Error installing additional libraries."
     exit 1
 fi
 
-# Procura por pacotes relacionados ao qt5 e exibe o progresso no terminal e no log
-log "Procurando pacotes relacionados ao qt5..."
-echo "Procurando pacotes relacionados ao qt5..."
+# Search for qt5-related packages and display progress in the terminal and in the log
+log "Searching for qt5-related packages..."
+echo "Searching for qt5-related packages..."
 if ! sudo dnf search qt5 | tee -a $LOGFILE; then
-    log "Erro ao procurar pacotes relacionados ao qt5."
+    log "Error searching for qt5-related packages."
     exit 1
 fi
 
-# Finaliza o arquivo de log
-log "Instalação concluída - $(date)"
-echo "Instalação concluída - $(date)" >> $LOGFILE
+# Finalize the log file
+log "Installation completed - $(date)"
+echo "Installation completed - $(date)" >> $LOGFILE
