@@ -92,6 +92,60 @@ After configuring, simply launch the server:
 
 The daemon listens for client connections on the configured host and port and logs events to the console.
 
+## To compile the PWCI-AuthDaemon project on CentOS 7, follow these steps:
+
+### 1. Install Required Dependencies
+
+This project uses Qt5 (specifically Qt5Sql, Qt5Network, Qt5Core), MySQL client libraries, and GCC toolchain. Install the required packages:
+```sh
+sudo yum groupinstall "Development Tools"
+sudo yum install qt5-qtbase-devel qt5-qtbase qt5-qtbase-gui qt5-qtbase-mysql qt5-qtdeclarative qt5-qttools qt5-qtsql-devel mysql-devel
+```
+
+You may need to enable EPEL or other repos for some packages.
+
+### 2. Prepare the Build Environment
+
+Ensure `qmake` (Qt's build system generator) is available:
+```sh
+which qmake
+# If not found, try: sudo yum install qt5-qtbase-devel
+```
+
+### 3. Build the Project
+
+In the root directory of the repository, run:
+```sh
+qmake gauthd.pro
+make
+```
+- `qmake gauthd.pro` generates the `Makefile`.
+- `make` compiles the project according to the generated Makefile.
+
+### 4. (Optional) Clean Previous Builds
+
+If you need to clean up previous build artifacts, run:
+```sh
+make clean
+```
+
+### 5. Troubleshooting
+
+- **Header or Library Not Found:** If you get errors about missing Qt headers or libraries, verify your Qt installation and adjust the `INCPATH` or `LIBS` variables in the Makefile if needed.
+- **MySQL Client Path:** The Makefile references a static MySQL client library. If you use dynamic linking or the library is in a different path, edit the Makefile or install the appropriate package.
+
+### 6. Running the Application
+
+After building, the executable (likely named `gauthd`) will be in the root or a build directory.
+
+---
+
+**Summary of Main Steps:**
+1. `sudo yum groupinstall "Development Tools"`
+2. `sudo yum install qt5-qtbase-devel qt5-qtsql-devel mysql-devel`
+3. `qmake gauthd.pro`
+4. `make`
+
 ## Contributing
 
 Contributions are welcome! Feel free to submit pull requests or report issues to help improve GAuthDaemon.
