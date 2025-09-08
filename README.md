@@ -26,7 +26,7 @@ For Fedora-based distributions you can run the provided `install.sh` to install 
 #### Rocky Linux 9
 
 ```bash
-sudo dnf install qt5-qtbase-devel qt5-qtnetwork-devel qt5-qtsql-devel mariadb-server mariadb-devel gcc-c++
+sudo dnf install qt5-qtbase-devel qt5-qtbase qt5-qttools qt5-qttools-devel qt5-qtbase-mysql mariadb-server mariadb-devel gcc-c++
 ```
 
 #### Ubuntu 20.04
