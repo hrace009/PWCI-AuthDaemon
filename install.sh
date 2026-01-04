@@ -43,6 +43,14 @@ if ! sudo dnf install -y qt5-qtbase-devel qt5-qtx11extras qt5-qttools | tee -a $
     exit 1
 fi
 
+# Install MariaDB client and server packages to match Rocky 9/MariaDB 10.11 builds
+log "Installing MariaDB packages and Qt MySQL driver..."
+echo "Installing MariaDB packages and Qt MySQL driver..."
+if ! sudo dnf install -y qt5-qtbase-mysql mariadb-server mariadb-devel mariadb-connector-c mariadb-connector-c-devel | tee -a $LOGFILE; then
+    log "Error installing MariaDB packages."
+    exit 1
+fi
+
 # Remove unnecessary packages and display progress in the terminal and in the log
 log "Removing unnecessary packages..."
 echo "Removing unnecessary packages..."
