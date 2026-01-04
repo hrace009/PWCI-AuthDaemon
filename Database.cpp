@@ -1,16 +1,27 @@
 #include "Database.h"
+#include <QStringList>
 
 Database* Database::self = NULL;
 
 void Database::connect()
 {
+    if (!QSqlDatabase::isDriverAvailable("QMYSQL")) {
+        Utils::print("QMYSQL driver is not available. Install the MySQL/MariaDB Qt driver (qt5-qtbase-mysql) before starting the daemon.");
+        exit(1);
+    }
+
     db = QSqlDatabase::addDatabase("QMYSQL");
     db.setHostName(Settings::mysql_host);
     db.setPort(Settings::mysql_port);
     db.setUserName(Settings::mysql_user);
     db.setPassword(Settings::mysql_pass);
     db.setDatabaseName(Settings::mysql_db);
-    db.setConnectOptions("MYSQL_OPT_RECONNECT=1;MYSQL_OPT_CONNECT_TIMEOUT=300");
+    QStringList options;
+    options << "MYSQL_OPT_RECONNECT=1"
+            << "MYSQL_OPT_CONNECT_TIMEOUT=300"
+            << "CLIENT_MULTI_STATEMENTS=1"
+            << "CLIENT_MULTI_RESULTS=1";
+    db.setConnectOptions(options.join(";"));
     if (!db.open()) {
         Utils::print(QString("Cant connect to mysql: %1").arg(db.lastError().text()));
         exit(0);
