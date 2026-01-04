@@ -26,8 +26,10 @@ For Fedora-based distributions you can run the provided `install.sh` to install 
 #### Rocky Linux 9
 
 ```bash
-sudo dnf install qt5-qtbase-devel qt5-qtbase qt5-qttools qt5-qttools-devel qt5-qtbase-mysql mariadb-server mariadb-devel gcc-c++
+sudo dnf install qt5-qtbase-devel qt5-qtbase qt5-qttools qt5-qttools-devel qt5-qtbase-mysql mariadb-server mariadb-devel mariadb-connector-c mariadb-connector-c-devel gcc-c++
 ```
+
+For MariaDB 10.11, enable the official MariaDB repository that matches your Rocky Linux release and install the `MariaDB-server` and `MariaDB-client` packages from that repository before building. The daemon links against the system-provided MariaDB connector, so keeping the connector packages in sync with the server version prevents runtime driver errors.
 
 #### Ubuntu 20.04
 
