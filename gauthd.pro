@@ -56,6 +56,17 @@ unix:!macx {
         CONFIG += link_pkgconfig
         PKGCONFIG += mysqlclient
     } else {
+        # Fallback: link against common library names and optional static mysqlclient
+        CONFIG(32bit) {
+            exists($$PWD/../../../../opt/Qt/mysql/x32/lib/libmysqlclient.a) {
+                LIBS += $$PWD/../../../../opt/Qt/mysql/x32/lib/libmysqlclient.a
+            }
+        }
+        CONFIG(64bit) {
+            exists($$PWD/../../../../opt/Qt/mysql/x64/lib/libmysqlclient.a) {
+                LIBS += $$PWD/../../../../opt/Qt/mysql/x64/lib/libmysqlclient.a
+            }
+        }
         LIBS += -lmariadb -lmysqlclient
     }
 }
