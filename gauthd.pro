@@ -46,9 +46,27 @@ HEADERS += \
 
 QMAKE_LFLAGS += 
 
-CONFIG(32bit) {
-    LIBS += -L$$PWD/../../../../opt/Qt/mysql/x32/lib/libmysqlclient.a
-}
-CONFIG(64bit) {
-    LIBS += -L$$PWD/../../../../opt/Qt/mysql/x64/lib/libmysqlclient.a
+unix:!macx {
+    mariadb_pkg = $$system("pkg-config --exists mariadb && echo 1")
+    mysqlclient_pkg = $$system("pkg-config --exists mysqlclient && echo 1")
+    !isEmpty(mariadb_pkg) {
+        CONFIG += link_pkgconfig
+        PKGCONFIG += mariadb
+    } else:!isEmpty(mysqlclient_pkg) {
+        CONFIG += link_pkgconfig
+        PKGCONFIG += mysqlclient
+    } else {
+        # Fallback: link against common library names and optional static mysqlclient
+        CONFIG(32bit) {
+            exists($$PWD/../../../../opt/Qt/mysql/x32/lib/libmysqlclient.a) {
+                LIBS += $$PWD/../../../../opt/Qt/mysql/x32/lib/libmysqlclient.a
+            }
+        }
+        CONFIG(64bit) {
+            exists($$PWD/../../../../opt/Qt/mysql/x64/lib/libmysqlclient.a) {
+                LIBS += $$PWD/../../../../opt/Qt/mysql/x64/lib/libmysqlclient.a
+            }
+        }
+        LIBS += -lmariadb -lmysqlclient
+    }
 }
