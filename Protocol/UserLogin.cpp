@@ -15,14 +15,15 @@ void UserLogin::Unmarshal()
     Database *db = Database::Instance();
     AuthServer *server = AuthServer::Instance();
     int zoneid = server->Zoneid;
-    int zonelocalsid = localsid;
+    const int localsidInt = static_cast<int>(localsid);
+    int zonelocalsid = localsidInt;
     int overwrite = blkickuser;
     db->recordOnline(userid, AuthServer::Instance()->Aid, zoneid, zonelocalsid, overwrite);
     int creatime;
     db->acquireUserCreatime(userid, creatime);
     Reset();
     writeUInt32(calcSession());
-    if (server->Zoneid != zoneid || zonelocalsid != localsid)
+    if (server->Zoneid != zoneid || zonelocalsid != localsidInt)
     {
         writeByte(10);
     }
