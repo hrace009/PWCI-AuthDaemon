@@ -35,7 +35,7 @@ bool AuthServer::bruteForceManager(QString ip)
     } else {
         challenges.insert(ip, 1);
     }
-    if (challenges[ip] > Settings::antibrut_count && !blocked.contains(ip)) {
+    if (challenges[ip] > static_cast<uint>(Settings::antibrut_count) && !blocked.contains(ip)) {
         blocked.insert(ip, QDateTime::currentDateTime().toTime_t());
         Utils::print(QString("Ip: %1 has been blocked").arg(ip));
         return true;
