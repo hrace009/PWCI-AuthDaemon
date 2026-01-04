@@ -18,9 +18,7 @@ void Database::connect()
     db.setDatabaseName(Settings::mysql_db);
     QStringList options;
     options << "MYSQL_OPT_RECONNECT=1"
-            << "MYSQL_OPT_CONNECT_TIMEOUT=300"
-            << "CLIENT_MULTI_STATEMENTS=1"
-            << "CLIENT_MULTI_RESULTS=1";
+            << "MYSQL_OPT_CONNECT_TIMEOUT=300";
     db.setConnectOptions(options.join(";"));
     if (!db.open()) {
         Utils::print(QString("Cant connect to mysql: %1").arg(db.lastError().text()));
