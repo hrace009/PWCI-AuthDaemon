@@ -1,38 +1,21 @@
 #ifndef AUTHCLIENT_H
 #define AUTHCLIENT_H
 
-#include <QObject>
-#include <QThread>
-#include <QTcpSocket>
-#include <QMetaType>
-#include <QMetaObject>
-#include <QTimer>
+#include <string>
+#include <thread>
 
-#include <Settings.h>
-#include <Network/OctetsStream.h>
-#include <Utils.h>
-#include <Database.h>
-
-class AuthClient : public QThread
-{
-    Q_OBJECT
+class AuthClient {
 public:
-    explicit AuthClient(qintptr socketDescriptor, QObject *parent = nullptr);
-
-signals:
-
-public slots:
-    void readyRead();
-    void disconnected();
-    void goldChecker();
-
-protected:
-    void run();
+    AuthClient(int socket_fd, std::string remote_ip, int remote_port);
+    void start();
 
 private:
-    qintptr socketDescriptor;
-    QTcpSocket *socket;
-    QTimer *goldTimer;
+    void run();
+
+    int socket_fd_;
+    std::string remote_ip_;
+    int remote_port_;
+    std::thread worker_;
 };
 
 #endif // AUTHCLIENT_H
