@@ -1,186 +1,65 @@
 #include "Database.h"
-#include <QStringList>
 
-Database* Database::self = NULL;
+#include <stdexcept>
 
-void Database::connect()
-{
-    if (!QSqlDatabase::isDriverAvailable("QMYSQL")) {
-        Utils::print("QMYSQL driver is not available. Install the MySQL/MariaDB Qt driver (qt5-qtbase-mysql) before starting the daemon.");
-        exit(1);
-    }
+#include "Settings.h"
+#include "Utils.h"
 
-    db = QSqlDatabase::addDatabase("QMYSQL");
-    db.setHostName(Settings::mysql_host);
-    db.setPort(Settings::mysql_port);
-    db.setUserName(Settings::mysql_user);
-    db.setPassword(Settings::mysql_pass);
-    db.setDatabaseName(Settings::mysql_db);
-    QStringList options;
-    options << "MYSQL_OPT_RECONNECT=1"
-            << "MYSQL_OPT_CONNECT_TIMEOUT=300";
-    db.setConnectOptions(options.join(";"));
-    if (!db.open()) {
-        Utils::print(QString("Cant connect to mysql: %1").arg(db.lastError().text()));
-        exit(0);
-    } else {
-        Utils::print("Successfully connected to database");
-    }
+Database *Database::self = nullptr;
+
+Database::~Database() {
+    disconnect();
 }
 
-void Database::clearOnlineRecords(const int &zoneid, const int &aid)
-{
-    QSqlQuery sql(db);
-    sql.prepare("CALL clearonlinerecords(?, ?)");
-    sql.addBindValue(zoneid);
-    sql.addBindValue(aid);
-    sql.exec();
-}
-
-
-void Database::acquireUserPasswd(const QString &login, int &uid, QString &passwd)
-{
-    QSqlQuery sql(db);
-    sql.prepare("CALL acquireuserpasswd(?, @out1, @out2)");
-    sql.addBindValue(login);
-    sql.exec();
-    sql.exec("SELECT @out1, @out2");
-    if(sql.next()) {
-        uid = sql.value(0).toInt();
-        passwd = sql.value(1).toString();
+Database *Database::Instance() {
+    if (!self) {
+        self = new Database();
     }
+    return self;
 }
 
-void Database::acquireUserPasswdbyEmail(const QString &email, int &uid, QString &passwd)
-{
-    QSqlQuery sql(db);
-    sql.prepare("SELECT ID, passwd FROM users WHERE email=?");
-    sql.addBindValue(email);
-    sql.exec();
-    if (sql.next()) {
-        uid = sql.value(0).toInt();
-        passwd = sql.value(1).toString();
+void Database::connect() {
+    if (connection) {
+        return;
+    }
+
+    connection = mysql_init(nullptr);
+    if (!connection) {
+        throw std::runtime_error("Failed to initialize MariaDB connection");
+    }
+
+    unsigned int timeout = 300;
+    mysql_options(connection, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
+    mysql_options(connection, MYSQL_OPT_RECONNECT, "1");
+
+    if (!mysql_real_connect(
+            connection,
+            Settings::mysql_host.c_str(),
+            Settings::mysql_user.c_str(),
+            Settings::mysql_pass.c_str(),
+            Settings::mysql_db.c_str(),
+            static_cast<unsigned int>(Settings::mysql_port),
+            nullptr,
+            0)) {
+        std::string error = mysql_error(connection);
+        disconnect();
+        throw std::runtime_error("MariaDB connection failed: " + error);
+    }
+
+    Utils::print("Successfully connected to MariaDB");
+}
+
+void Database::disconnect() {
+    if (connection) {
+        mysql_close(connection);
+        connection = nullptr;
     }
 }
 
-void Database::recordOnline(const int &uid, const int &aid, int &zoneid, int &zonelocalid, int &overwrite)
-{
-    QSqlQuery sql(db);
-    sql.prepare("CALL recordonline(?, ?, ?, ?, ?)");
-    sql.addBindValue(uid);
-    sql.addBindValue(aid);
-    sql.addBindValue(zoneid, QSql::InOut);
-    sql.addBindValue(zonelocalid, QSql::InOut);
-    sql.addBindValue(overwrite, QSql::InOut);
-    sql.exec();
-    zoneid = sql.boundValue(2).toInt();
-    zonelocalid = sql.boundValue(3).toInt();
-    overwrite = sql.boundValue(4).toInt();
+bool Database::isConnected() const {
+    return connection != nullptr;
 }
 
-void Database::recordOffline(const int &uid, const int &aid, int &zoneid, int &zonelocalid, int &overwrite)
-{
-    QSqlQuery sql(db);
-    sql.prepare("CALL recordoffline(?, ?, ?, ?, ?)");
-    sql.addBindValue(uid);
-    sql.addBindValue(aid);
-    sql.addBindValue(zoneid, QSql::InOut);
-    sql.addBindValue(zonelocalid, QSql::InOut);
-    sql.addBindValue(overwrite, QSql::InOut);
-    sql.exec();
-    zoneid = sql.boundValue(2).toInt();
-    zonelocalid = sql.boundValue(3).toInt();
-    overwrite = sql.boundValue(4).toInt();
-}
-
-void Database::acquireUserCreatime(const int &uid, int &timestamp)
-{
-    QSqlQuery sql(db);
-    sql.prepare("SELECT creatime FROM users WHERE ID=?");
-    sql.addBindValue(uid);
-    sql.exec();
-    if (sql.next()) {
-        timestamp = sql.value(0).toDateTime().toTime_t();
-    }
-}
-
-QList<int> Database::acquireUserPrivilege(const int &userid, const int &zoneid)
-{
-    QList<int> priv;
-    QSqlQuery sql(db);
-    sql.prepare("SELECT rid FROM auth WHERE userid=? AND zoneid=?");
-    sql.addBindValue(userid);
-    sql.addBindValue(zoneid);
-    sql.exec();
-    while (sql.next())
-        priv.append(sql.value(0).toInt());
-    return priv;
-}
-
-QVariantList Database::getUseCashNow(const int &status)
-{
-    QVariantList cashnow;
-    QSqlQuery sql(db);
-    sql.prepare("SELECT * FROM usecashnow WHERE status=?");
-    sql.addBindValue(status);
-    sql.exec();
-    if (sql.next()) {
-        cashnow << sql.value(0) << sql.value(1);
-        QSqlQuery di(db);
-        di.prepare("UPDATE usecashnow SET status=1 WHERE userid=? AND creatime=?");
-        di.addBindValue(sql.value(0));
-        di.addBindValue(sql.value(7));
-        di.exec();
-    }
-    return cashnow;
-}
-
-QVariantList Database::getUseCashNow(const int &userid, const int &zoneid)
-{
-    QVariantList cashnow;
-    QSqlQuery sql(db);
-    sql.prepare("SELECT * FROM usecashnow WHERE userid=? AND zoneid=? AND status=1");
-    sql.addBindValue(userid);
-    sql.addBindValue(zoneid);
-    sql.exec();
-    if (sql.next())
-        cashnow << sql.value(0) << sql.value(1) << sql.value(2)
-        << sql.value(3) << sql.value(4) << sql.value(5) << sql.value(6) << sql.value(7);
-    sql.prepare("DELETE FROM usecashnow WHERE userid=? AND zoneid=? AND status=1");
-    sql.addBindValue(userid);
-    sql.addBindValue(zoneid);
-    sql.exec();
-    return cashnow;
-}
-
-void Database::addCashLog(const int &userid, const int &zoneid, const int &sn, const int &aid, const int &point, const int &cash, const int &status, const QDateTime &creatime)
-{
-    QSqlQuery sql(db);
-    sql.prepare("INSERT INTO usecashlog VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-    sql.addBindValue(userid);
-    sql.addBindValue(zoneid);
-    sql.addBindValue(sn);
-    sql.addBindValue(aid);
-    sql.addBindValue(point);
-    sql.addBindValue(cash);
-    sql.addBindValue(status);
-    sql.addBindValue(creatime);
-    sql.exec();
-}
-
-int Database::useCash(const int &userid, const int &zoneid, const int &sn, const int &aid, const int &point, const int &cash, const int &status)
-{
-    QSqlQuery sql(db);
-    sql.prepare("CALL usecash(?, ?, ?, ?, ?, ?, ?, @out1)");
-    sql.addBindValue(userid);
-    sql.addBindValue(zoneid);
-    sql.addBindValue(sn);
-    sql.addBindValue(aid);
-    sql.addBindValue(point);
-    sql.addBindValue(cash);
-    sql.addBindValue(status);
-    sql.exec();
-    sql.exec("SELECT @out1");
-    sql.next();
-    return sql.value(0).toInt();
+MYSQL *Database::handle() {
+    return connection;
 }

@@ -1,51 +1,98 @@
 #include "Settings.h"
 
-QString Settings::auth_host = "";
+#include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+
+std::string Settings::auth_host = "";
 int Settings::auth_port = 0;
 int Settings::gold_timeout = 0;
 bool Settings::byLogin = false;
 bool Settings::byEmail = false;
 bool Settings::byToken = false;
 int Settings::hash_type = 0;
-QString Settings::mysql_host = "";
+std::string Settings::mysql_host = "";
 int Settings::mysql_port = 0;
-QString Settings::mysql_user = "";
-QString Settings::mysql_pass = "";
-QString Settings::mysql_db = "";
+std::string Settings::mysql_user = "";
+std::string Settings::mysql_pass = "";
+std::string Settings::mysql_db = "";
 bool Settings::validator_enabled = false;
-QString Settings::validator_string = "";
+std::string Settings::validator_string = "";
 bool Settings::antibrut_enabled = false;
 int Settings::antibrut_count = 0;
 int Settings::antibrut_interval = 0;
 int Settings::antibrut_blocktime = 0;
 
+namespace {
+std::string trim(std::string value) {
+    auto not_space = [](unsigned char ch) { return !std::isspace(ch); };
+    value.erase(value.begin(), std::find_if(value.begin(), value.end(), not_space));
+    value.erase(std::find_if(value.rbegin(), value.rend(), not_space).base(), value.end());
+    return value;
+}
 
-void Settings::Init(const QString &file)
-{
-    QSettings settings(file, QSettings::IniFormat);
-    auth_host = settings.value("GAuthServer/host").toString();
-    auth_port = settings.value("GAuthServer/port").toInt();
-    QString auth_type = settings.value("GAuthServer/allow_auth_type").toString();
-    if (auth_type.contains("login"))
-        byLogin = true;
-    if (auth_type.contains("email"))
-        byEmail = true;
-    if (auth_type.contains("token"))
-        byToken = true;
-    gold_timeout = settings.value("GAuthServer/gold_timeout").toInt();
-    hash_type = settings.value("GAuthServer/hash_type").toInt();
+bool parseBool(const std::string &value) {
+    std::string lower = value;
+    std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char ch) { return std::tolower(ch); });
+    return lower == "1" || lower == "true" || lower == "yes" || lower == "on";
+}
 
-    mysql_host = settings.value("Mysql/host").toString();
-    mysql_port = settings.value("Mysql/port").toInt();
-    mysql_user = settings.value("Mysql/user").toString();
-    mysql_pass = settings.value("Mysql/pass").toString();
-    mysql_db = settings.value("Mysql/db").toString();
+std::map<std::string, std::map<std::string, std::string>> loadIni(const std::string &path) {
+    std::ifstream file(path);
+    if (!file) {
+        throw std::runtime_error("Unable to open config file: " + path);
+    }
 
-    validator_enabled = settings.value("Validator/is_enabled").toBool();
-    validator_string = settings.value("Validator/regex").toString();
+    std::map<std::string, std::map<std::string, std::string>> data;
+    std::string line;
+    std::string section;
+    while (std::getline(file, line)) {
+        line = trim(line);
+        if (line.empty() || line[0] == ';' || line[0] == '#') {
+            continue;
+        }
+        if (line.front() == '[' && line.back() == ']') {
+            section = trim(line.substr(1, line.size() - 2));
+            continue;
+        }
+        auto pos = line.find('=');
+        if (pos == std::string::npos) {
+            continue;
+        }
+        std::string key = trim(line.substr(0, pos));
+        std::string value = trim(line.substr(pos + 1));
+        data[section][key] = value;
+    }
+    return data;
+}
+} // namespace
 
-    antibrut_enabled = settings.value("Antibrut/is_enabled").toBool();
-    antibrut_count = settings.value("Antibrut/count").toInt();
-    antibrut_interval = settings.value("Antibrut/interval").toInt();
-    antibrut_blocktime = settings.value("Antibrut/block_time").toInt();
+void Settings::Init(const std::string &path) {
+    auto config = loadIni(path);
+
+    auth_host = config["GAuthServer"]["host"];
+    auth_port = std::stoi(config["GAuthServer"]["port"]);
+    std::string auth_type = config["GAuthServer"]["allow_auth_type"];
+    byLogin = auth_type.find("login") != std::string::npos;
+    byEmail = auth_type.find("email") != std::string::npos;
+    byToken = auth_type.find("token") != std::string::npos;
+    gold_timeout = std::stoi(config["GAuthServer"]["gold_timeout"]);
+    hash_type = std::stoi(config["GAuthServer"]["hash_type"]);
+
+    mysql_host = config["Mysql"]["host"];
+    mysql_port = std::stoi(config["Mysql"]["port"]);
+    mysql_user = config["Mysql"]["user"];
+    mysql_pass = config["Mysql"]["pass"];
+    mysql_db = config["Mysql"]["db"];
+
+    validator_enabled = parseBool(config["Validator"]["is_enabled"]);
+    validator_string = config["Validator"]["regex"];
+
+    antibrut_enabled = parseBool(config["Antibrut"]["is_enabled"]);
+    antibrut_count = std::stoi(config["Antibrut"]["count"]);
+    antibrut_interval = std::stoi(config["Antibrut"]["interval"]);
+    antibrut_blocktime = std::stoi(config["Antibrut"]["block_time"]);
 }

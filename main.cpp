@@ -1,45 +1,47 @@
-#include <QCoreApplication>
-#include <QSqlDatabase>
-#include <QDebug>
-#include <QDir>
+#include <atomic>
+#include <csignal>
+#include <exception>
+#include <iostream>
+#include <thread>
 
-#include <Settings.h>
-#include <Database.h>
-#include <AuthServer.h>
-#include <Utils.h>
+#include "AuthServer.h"
+#include "Database.h"
+#include "Settings.h"
+#include "Utils.h"
 
-#include <Protocol/AnnounceZoneid.h>
-#include <Protocol/AnnounceZoneid2.h>
-#include <Protocol/AnnounceZoneid3.h>
-#include <Protocol/MatrixPasswd.h>
-#include <Protocol/UserLogin.h>
-#include <Protocol/UserLogout.h>
-#include <Protocol/QueryUserPrivilege.h>
-#include <Protocol/MatrixToken.h>
-#include <Protocol/GetAddCashSN.h>
-#include <Protocol/Game2AU.h>
+namespace {
+std::atomic<bool> running{true};
 
-int main(int argc, char *argv[])
-{
-    QCoreApplication a(argc, argv);
-    //Register protocol handle
-    qRegisterMetaType<AnnounceZoneid>("505");
-    qRegisterMetaType<AnnounceZoneid2>("523");
-    qRegisterMetaType<AnnounceZoneid3>("527");
-    qRegisterMetaType<MatrixPasswd>("550");
-    qRegisterMetaType<UserLogin>("15");
-    qRegisterMetaType<UserLogout>("33");
-    qRegisterMetaType<QueryUserPrivilege>("506");
-    qRegisterMetaType<MatrixToken>("8070");
-    qRegisterMetaType<GetAddCashSN>("514");
-    qRegisterMetaType<OctetsStream>("516");//AddCash_Re
-    qRegisterMetaType<Game2AU>("8039");
+void handleSignal(int) {
+    running = false;
+}
+} // namespace
 
-    Utils::print("GAuthDaemon by hrace009 1.0");
-    Utils::print(QString("Build date: %1 at %2").arg(__DATE__).arg(__TIME__));
-    Utils::print("Loading gauthd.conf");
-    Settings::Init(a.applicationDirPath() + "/gauthd.conf");
-    Database::Instance()->connect();
-    AuthServer::Instance()->Start();
-    return a.exec();
+int main(int argc, char *argv[]) {
+    const std::string config_path = (argc > 1) ? argv[1] : "gauthd.conf";
+
+    try {
+        Utils::print("GAuthDaemon (C++/MariaDB) by hrace009");
+        Utils::print("Loading config: " + config_path);
+
+        Settings::Init(config_path);
+        Database::Instance()->connect();
+
+        std::signal(SIGINT, handleSignal);
+        std::signal(SIGTERM, handleSignal);
+
+        AuthServer::Instance()->Start();
+
+        while (running) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        AuthServer::Instance()->Stop();
+        Database::Instance()->disconnect();
+    } catch (const std::exception &ex) {
+        std::cerr << "Fatal error: " << ex.what() << std::endl;
+        return 1;
+    }
+
+    return 0;
 }

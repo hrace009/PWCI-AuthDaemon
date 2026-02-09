@@ -1,46 +1,36 @@
 #ifndef AUTHSERVER_H
 #define AUTHSERVER_H
 
-#include <QObject>
-#include <QTcpServer>
-#include <QHostAddress>
-#include <QHash>
-#include <QMutex>
-#include <QMutexLocker>
-#include <QTimer>
+#include <atomic>
+#include <chrono>
+#include <map>
+#include <mutex>
+#include <string>
+#include <thread>
 
-#include <Settings.h>
-#include <AuthClient.h>
-#include <Utils.h>
-
-class AuthServer : public QTcpServer
-{
-    Q_OBJECT
+class AuthServer {
 public:
-    explicit AuthServer(QObject *parent = nullptr) : QTcpServer(parent) {}
+    static AuthServer *Instance();
+
     void Start();
-    bool bruteForceManager(QString ip);
-    static AuthServer *Instance()
-    {
-        if (!self)
-            self = new AuthServer();
-        return self;
-    }
-    static AuthServer *self;
-    int Zoneid = 0;
-    int Aid = 0;
-
-public slots:
-    void bruteCleaner();
-
-protected:
-    void incomingConnection(qintptr handle);
+    void Stop();
 
 private:
-    QHash<QString, uint> challenges;
-    QHash<QString, uint> blocked;
-    QMutex mutex;
-    QTimer *bruteTimer;
+    AuthServer() = default;
+    void acceptLoop();
+    void bruteCleanerLoop();
+    bool bruteForceManager(const std::string &ip);
+
+    static AuthServer *self;
+
+    std::atomic<bool> running_{false};
+    int server_fd_ = -1;
+    std::thread accept_thread_;
+    std::thread brute_thread_;
+
+    std::mutex mutex_;
+    std::map<std::string, unsigned int> challenges_;
+    std::map<std::string, std::chrono::system_clock::time_point> blocked_;
 };
 
 #endif // AUTHSERVER_H
